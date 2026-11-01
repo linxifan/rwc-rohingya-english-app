@@ -8,6 +8,7 @@ import type { Word } from '@/api/types';
 import { categoryIcon } from '@/components/categoryIcon';
 import { GradientScreen } from '@/components/GradientScreen';
 import { ProgressBar } from '@/components/ProgressBar';
+import { LoadState } from '@/components/LoadState';
 import { Sheet } from '@/components/Sheet';
 import { useAppState } from '@/state/AppState';
 import { colors, fonts, radius, shadow, spacing, TAB_BAR_SPACE } from '@/theme';
@@ -17,12 +18,22 @@ export default function LearnScreen() {
   const router = useRouter();
   const { progress, saved } = useAppState();
   const [next, setNext] = useState<Word | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   const practiced = progress?.wordsPracticed;
 
   // Re-fetch the suggestion whenever practice progress changes.
   useEffect(() => {
-    api.getNextWord().then(setNext);
-  }, [practiced]);
+    let live = true;
+    setLoading(true);
+    setLoadError(null);
+    api.getNextWord()
+      .then((word) => { if (live) setNext(word); })
+      .catch(() => { if (live) setLoadError('Could not load your next word.'); })
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, [practiced, retryKey]);
 
   const total = progress?.wordsTotal ?? 0;
   const pct = total ? (progress?.wordsPracticed ?? 0) / total : 0;
@@ -45,7 +56,9 @@ export default function LearnScreen() {
             { paddingBottom: insets.bottom + TAB_BAR_SPACE + spacing.xl },
           ]}
         >
-          {next ? (
+          {loading || loadError ? (
+            <LoadState loading={loading} error={loadError} onRetry={() => setRetryKey((n) => n + 1)} message="Loading next word…" />
+          ) : next ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Practice next word: ${next.english}`}
