@@ -26,8 +26,6 @@ export default function ScenarioLanding() {
 
   useEffect(() => {
     let live = true;
-    setLoading(true);
-    setLoadError(null);
     Promise.all([api.getCategories(), api.getScenarios()])
       .then(([cats, items]) => {
         if (live) { setCategories(cats); setScenarios(items); }
