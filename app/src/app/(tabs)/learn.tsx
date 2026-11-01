@@ -26,8 +26,6 @@ export default function LearnScreen() {
   // Re-fetch the suggestion whenever practice progress changes.
   useEffect(() => {
     let live = true;
-    setLoading(true);
-    setLoadError(null);
     api.getNextWord()
       .then((word) => { if (live) setNext(word); })
       .catch(() => { if (live) setLoadError('Could not load your next word.'); })
