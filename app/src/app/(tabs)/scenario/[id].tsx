@@ -31,6 +31,13 @@ export default function ScenarioChat() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  // Retry is a user event, so resetting request state here is safe under
+  // react-hooks/set-state-in-effect and makes the loading indicator visible.
+  const retryLoad = () => {
+    setLoading(true);
+    setLoadError(null);
+    setRetryKey((n) => n + 1);
+  };
   const [items, setItems] = useState<Item[]>([]);
   const list = useRef<FlatList<Item>>(null);
   const { recording, toggle } = useRecorder();
@@ -42,7 +49,7 @@ export default function ScenarioChat() {
       .then((s) => {
         if (!live) return;
         if (!s || !s.turns.length) setLoadError('Scenario not found.');
-        else { setScenario(s); setItems([s.turns[0]]); }
+        else { setScenario(s); setItems([s.turns[0]]); setLoadError(null); }
       })
       .catch(() => { if (live) setLoadError('Could not load this scenario.'); })
       .finally(() => { if (live) setLoading(false); });
@@ -133,7 +140,7 @@ export default function ScenarioChat() {
       </View>
       <Sheet>
         {loading || loadError ? (
-          <LoadState loading={loading} error={loadError} onRetry={() => setRetryKey((n) => n + 1)} message="Loading scenario…" />
+          <LoadState loading={loading} error={loadError} onRetry={retryLoad} message="Loading scenario…" />
         ) : (
         <>
         <FlatList
