@@ -9,6 +9,7 @@ import { GradientScreen } from '@/components/GradientScreen';
 import { IconButton } from '@/components/IconButton';
 import { Segmented } from '@/components/Segmented';
 import { LoadState } from '@/components/LoadState';
+import { PhrasePractice } from '@/components/PhrasePractice';
 import { Sheet } from '@/components/Sheet';
 import { WordCard, WordRow } from '@/components/WordCard';
 import { usePlayAudio } from '@/hooks/usePlayAudio';
@@ -210,6 +211,7 @@ export default function WordsScreen() {
             view === 'cards' && styles.grid,
             { paddingBottom: insets.bottom + TAB_BAR_SPACE + spacing.xl },
           ]}
+          ListFooterComponent={filter === 'greetings' && !loading && !loadError ? <PhrasePractice /> : null}
           ListEmptyComponent={
             loading || loadError ? (
               <LoadState loading={loading} error={loadError} onRetry={retryLoad} message="Loading words…" />
