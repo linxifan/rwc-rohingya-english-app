@@ -100,6 +100,23 @@ export default function LearnScreen() {
             <Tile icon="ribbon" value={progress?.latestScore ?? '–'} label="Latest score" />
           </View>
 
+          <Text style={styles.section}>Practice</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open Phrase Practice"
+            onPress={() => router.push('/phrases')}
+            style={styles.phraseEntry}
+          >
+            <View style={styles.phraseIcon}>
+              <Ionicons name="chatbox-ellipses-outline" size={26} color={colors.primary} />
+            </View>
+            <View style={styles.phraseBody}>
+              <Text style={styles.phraseTitle}>Phrase Practice</Text>
+              <Text style={styles.phraseDescription}>15 everyday English phrases · Speak and practice</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
+          </Pressable>
+
           <Text style={styles.section}>By topic</Text>
           {progress?.categories.map((c) => {
             const done = c.wordsPracticed + c.scenariosDone;
@@ -215,6 +232,27 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginTop: spacing.sm,
   },
+  phraseEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  phraseIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  phraseBody: { flex: 1, gap: spacing.xs },
+  phraseTitle: { fontSize: fonts.size.md, fontWeight: fonts.weight.bold, color: colors.text },
+  phraseDescription: { fontSize: fonts.size.sm, color: colors.textMuted },
   topic: {
     flexDirection: 'row',
     alignItems: 'center',
