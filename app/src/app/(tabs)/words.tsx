@@ -56,8 +56,6 @@ export default function WordsScreen() {
 
   useEffect(() => {
     let live = true;
-    setLoading(true);
-    setLoadError(null);
     api
       .getWords({ categoryId: showSaved ? undefined : filter, query: deferredQuery })
       .then((w) => { if (live) setFetched(w); })
