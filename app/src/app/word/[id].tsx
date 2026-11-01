@@ -26,6 +26,13 @@ export default function WordPractice() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  // Retry is a user event, so resetting request state here is safe under
+  // react-hooks/set-state-in-effect and makes the loading indicator visible.
+  const retryLoad = () => {
+    setLoading(true);
+    setLoadError(null);
+    setRetryKey((n) => n + 1);
+  };
   const [result, setResult] = useState<PronunciationResult | null>(null);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -39,7 +46,7 @@ export default function WordPractice() {
       .then((data) => {
         if (!live) return;
         if (!data) setLoadError('Word not found.');
-        else setWord(data);
+        else { setWord(data); setLoadError(null); }
       })
       .catch(() => { if (live) setLoadError('Could not load this word.'); })
       .finally(() => { if (live) setLoading(false); });
@@ -93,7 +100,7 @@ export default function WordPractice() {
 
         {loading || loadError ? (
           <View style={styles.loadPanel}>
-            <LoadState loading={loading} error={loadError} onRetry={() => setRetryKey((n) => n + 1)} message="Loading word…" />
+            <LoadState loading={loading} error={loadError} onRetry={retryLoad} message="Loading word…" />
           </View>
         ) : word ? (
           <>
