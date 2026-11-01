@@ -10,6 +10,7 @@ import { ConfidenceBadge } from '@/components/ConfidenceBadge';
 import { GradientScreen } from '@/components/GradientScreen';
 import { IconButton } from '@/components/IconButton';
 import { MicButton } from '@/components/MicButton';
+import { LoadState } from '@/components/LoadState';
 import { Sheet } from '@/components/Sheet';
 import { usePlayAudio } from '@/hooks/usePlayAudio';
 import { useRecorder } from '@/hooks/useRecorder';
@@ -27,17 +28,30 @@ export default function ScenarioChat() {
   const router = useRouter();
   const { recordScenarioComplete } = useAppState();
   const [scenario, setScenario] = useState<Scenario | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   const [items, setItems] = useState<Item[]>([]);
   const list = useRef<FlatList<Item>>(null);
   const { recording, toggle } = useRecorder();
   const play = usePlayAudio();
 
   useEffect(() => {
-    api.getScenario(id).then((s) => {
-      setScenario(s);
-      if (s) setItems([s.turns[0]]);
-    });
-  }, [id]);
+    let live = true;
+    setLoading(true);
+    setLoadError(null);
+    setScenario(null);
+    setItems([]);
+    api.getScenario(id)
+      .then((s) => {
+        if (!live) return;
+        if (!s || !s.turns.length) setLoadError('Scenario not found.');
+        else { setScenario(s); setItems([s.turns[0]]); }
+      })
+      .catch(() => { if (live) setLoadError('Could not load this scenario.'); })
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, [id, retryKey]);
 
   const complete = !!items.find((i) => i.role === 'complete');
   // Current step = how many partner prompts have been shown so far.
@@ -122,6 +136,10 @@ export default function ScenarioChat() {
         )}
       </View>
       <Sheet>
+        {loading || loadError ? (
+          <LoadState loading={loading} error={loadError} onRetry={() => setRetryKey((n) => n + 1)} message="Loading scenario…" />
+        ) : (
+        <>
         <FlatList
           ref={list}
           style={styles.flex}
@@ -134,6 +152,8 @@ export default function ScenarioChat() {
         <View style={[styles.micBar, { paddingBottom: insets.bottom + TAB_BAR_SPACE }]}>
           <MicButton recording={recording} onPress={onMic} disabled={complete} />
         </View>
+        </>
+        )}
       </Sheet>
     </GradientScreen>
   );
