@@ -23,12 +23,19 @@ export default function ScenarioLanding() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  // Retry is a user event, so resetting request state here is safe under
+  // react-hooks/set-state-in-effect and makes the loading indicator visible.
+  const retryLoad = () => {
+    setLoading(true);
+    setLoadError(null);
+    setRetryKey((n) => n + 1);
+  };
 
   useEffect(() => {
     let live = true;
     Promise.all([api.getCategories(), api.getScenarios()])
       .then(([cats, items]) => {
-        if (live) { setCategories(cats); setScenarios(items); }
+        if (live) { setCategories(cats); setScenarios(items); setLoadError(null); }
       })
       .catch(() => { if (live) setLoadError('Could not load scenarios.'); })
       .finally(() => { if (live) setLoading(false); });
@@ -45,7 +52,7 @@ export default function ScenarioLanding() {
       </View>
       <Sheet>
         {loading || loadError ? (
-          <LoadState loading={loading} error={loadError} onRetry={() => setRetryKey((n) => n + 1)} message="Loading scenarios…" />
+          <LoadState loading={loading} error={loadError} onRetry={retryLoad} message="Loading scenarios…" />
         ) : (
         <FlatList
           data={withScenarios}
