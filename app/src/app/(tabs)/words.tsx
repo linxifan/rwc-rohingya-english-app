@@ -41,6 +41,13 @@ export default function WordsScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  // Retry is a user event, so resetting request state here is safe under
+  // react-hooks/set-state-in-effect and makes the loading indicator visible.
+  const retryLoad = () => {
+    setLoading(true);
+    setLoadError(null);
+    setRetryKey((n) => n + 1);
+  };
   const [voiceResults, setVoiceResults] = useState<Word[] | null>(null);
   const { saved, toggleSaved, progress } = useAppState();
   const { recording, toggle: toggleMic } = useRecorder();
@@ -58,7 +65,7 @@ export default function WordsScreen() {
     let live = true;
     api
       .getWords({ categoryId: showSaved ? undefined : filter, query: deferredQuery })
-      .then((w) => { if (live) setFetched(w); })
+      .then((w) => { if (live) { setFetched(w); setLoadError(null); } })
       .catch(() => { if (live) setLoadError('Could not load words.'); })
       .finally(() => { if (live) setLoading(false); });
     return () => {
@@ -74,6 +81,8 @@ export default function WordsScreen() {
   const setFilter = useCallback(
     (value?: string) => {
       setVoiceResults(null);
+      setLoading(true);
+      setLoadError(null);
       router.setParams({ category: value });
     },
     [router],
@@ -137,6 +146,8 @@ export default function WordsScreen() {
               onChangeText={(t) => {
                 setVoiceResults(null);
                 setQuery(t);
+                setLoading(true);
+                setLoadError(null);
               }}
               placeholder="Search English or Rohingyalish"
               placeholderTextColor={colors.textMuted}
@@ -201,7 +212,7 @@ export default function WordsScreen() {
           ]}
           ListEmptyComponent={
             loading || loadError ? (
-              <LoadState loading={loading} error={loadError} onRetry={() => setRetryKey((n) => n + 1)} message="Loading words…" />
+              <LoadState loading={loading} error={loadError} onRetry={retryLoad} message="Loading words…" />
             ) : <Text style={styles.empty}>{emptyText}</Text>
           }
         />
