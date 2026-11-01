@@ -135,9 +135,6 @@ export default function LearnScreen() {
 
           <View style={styles.phraseCard}>
             <Text style={styles.section}>Phrase practice (demo)</Text>
-            <Text style={styles.phraseNote}>
-              Using David’s 15 synthetic English demo phrases (not verified translations).
-            </Text>
             {phraseLoading || phraseError ? (
               <LoadState loading={phraseLoading} error={phraseError} onRetry={retryPhrases} message="Loading phrases…" />
             ) : phrases.length ? (
