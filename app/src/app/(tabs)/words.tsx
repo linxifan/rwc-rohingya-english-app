@@ -8,6 +8,7 @@ import type { Category, Word } from '@/api/types';
 import { GradientScreen } from '@/components/GradientScreen';
 import { IconButton } from '@/components/IconButton';
 import { Segmented } from '@/components/Segmented';
+import { LoadState } from '@/components/LoadState';
 import { Sheet } from '@/components/Sheet';
 import { WordCard, WordRow } from '@/components/WordCard';
 import { usePlayAudio } from '@/hooks/usePlayAudio';
@@ -37,24 +38,35 @@ export default function WordsScreen() {
   const deferredQuery = useDeferredValue(query);
   const [categories, setCategories] = useState<Category[]>([]);
   const [fetched, setFetched] = useState<Word[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   const [voiceResults, setVoiceResults] = useState<Word[] | null>(null);
   const { saved, toggleSaved, progress } = useAppState();
   const { recording, toggle: toggleMic } = useRecorder();
   const play = usePlayAudio();
 
   useEffect(() => {
-    api.getCategories().then(setCategories);
-  }, []);
+    let live = true;
+    api.getCategories().then((data) => { if (live) setCategories(data); }).catch(() => {
+      if (live) setLoadError('Could not load word categories.');
+    });
+    return () => { live = false; };
+  }, [retryKey]);
 
   useEffect(() => {
     let live = true;
+    setLoading(true);
+    setLoadError(null);
     api
       .getWords({ categoryId: showSaved ? undefined : filter, query: deferredQuery })
-      .then((w) => live && setFetched(w));
+      .then((w) => { if (live) setFetched(w); })
+      .catch(() => { if (live) setLoadError('Could not load words.'); })
+      .finally(() => { if (live) setLoading(false); });
     return () => {
       live = false;
     };
-  }, [filter, showSaved, deferredQuery]);
+  }, [filter, showSaved, deferredQuery, retryKey]);
 
   const words = useMemo(() => {
     const base = voiceResults ?? fetched;
@@ -177,7 +189,7 @@ export default function WordsScreen() {
         <FlatList
           key={view}
           style={styles.list}
-          data={words}
+          data={loading || loadError ? [] : words}
           numColumns={view === 'cards' ? 2 : 1}
           keyExtractor={(w) => w.id}
           renderItem={renderWord}
@@ -189,7 +201,11 @@ export default function WordsScreen() {
             view === 'cards' && styles.grid,
             { paddingBottom: insets.bottom + TAB_BAR_SPACE + spacing.xl },
           ]}
-          ListEmptyComponent={<Text style={styles.empty}>{emptyText}</Text>}
+          ListEmptyComponent={
+            loading || loadError ? (
+              <LoadState loading={loading} error={loadError} onRetry={() => setRetryKey((n) => n + 1)} message="Loading words…" />
+            ) : <Text style={styles.empty}>{emptyText}</Text>
+          }
         />
       </Sheet>
     </GradientScreen>
