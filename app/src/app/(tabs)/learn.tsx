@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/api/client';
-import type { ScenarioTurn, Word } from '@/api/types';
+import type { Word } from '@/api/types';
+import { davidDemoPhrases, type PracticePhrase } from '@/api/davidPhrases';
 import { categoryIcon } from '@/components/categoryIcon';
 import { GradientScreen } from '@/components/GradientScreen';
 import { ProgressBar } from '@/components/ProgressBar';
@@ -31,7 +32,7 @@ export default function LearnScreen() {
     setRetryKey((n) => n + 1);
   };
   const practiced = progress?.wordsPracticed;
-  const [phrases, setPhrases] = useState<ScenarioTurn[]>([]);
+  const [phrases, setPhrases] = useState<PracticePhrase[]>([]);
   const [phraseLoading, setPhraseLoading] = useState(true);
   const [phraseError, setPhraseError] = useState<string | null>(null);
   const [phraseRetryKey, setPhraseRetryKey] = useState(0);
@@ -48,10 +49,10 @@ export default function LearnScreen() {
 
   useEffect(() => {
     let live = true;
-    api.getScenarios()
+    Promise.resolve(davidDemoPhrases)
       .then((items) => {
         if (!live) return;
-        setPhrases(items.flatMap((scenario) => scenario.turns.filter((turn) => turn.role === 'partner')));
+        setPhrases(items);
         setPhraseError(null);
       })
       .catch(() => { if (live) setPhraseError('Could not load practice phrases.'); })
@@ -135,7 +136,7 @@ export default function LearnScreen() {
           <View style={styles.phraseCard}>
             <Text style={styles.section}>Phrase practice (demo)</Text>
             <Text style={styles.phraseNote}>
-              Using Scenario mock phrases until David’s data is available.
+              Using David’s 15 synthetic English demo phrases (not verified translations).
             </Text>
             {phraseLoading || phraseError ? (
               <LoadState loading={phraseLoading} error={phraseError} onRetry={retryPhrases} message="Loading phrases…" />
