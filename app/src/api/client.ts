@@ -77,7 +77,6 @@ export const api = {
   getWords: (opts: { categoryId?: string; query?: string } = {}): Promise<Word[]> => {
     const q = opts.query?.trim().toLowerCase();
     return delay(
-      'getWords',
       words.filter(
         (x) =>
           (!opts.categoryId || x.categoryId === opts.categoryId) &&
@@ -140,7 +139,7 @@ export const api = {
   },
 
   getScenarios: (categoryId?: string): Promise<Scenario[]> =>
-    delay('getScenarios',
+    delay(
       scenarios.filter((x) => !categoryId || x.categoryId === categoryId),
       100,
     ),
