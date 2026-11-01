@@ -35,9 +35,6 @@ export default function WordPractice() {
 
   useEffect(() => {
     let live = true;
-    setLoading(true);
-    setLoadError(null);
-    setWord(null);
     api.getWord(id)
       .then((data) => {
         if (!live) return;
