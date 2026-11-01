@@ -21,13 +21,20 @@ export default function LearnScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  // Retry is a user event, so resetting request state here is safe under
+  // react-hooks/set-state-in-effect and makes the loading indicator visible.
+  const retryLoad = () => {
+    setLoading(true);
+    setLoadError(null);
+    setRetryKey((n) => n + 1);
+  };
   const practiced = progress?.wordsPracticed;
 
   // Re-fetch the suggestion whenever practice progress changes.
   useEffect(() => {
     let live = true;
     api.getNextWord()
-      .then((word) => { if (live) setNext(word); })
+      .then((word) => { if (live) { setNext(word); setLoadError(null); } })
       .catch(() => { if (live) setLoadError('Could not load your next word.'); })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
@@ -55,7 +62,7 @@ export default function LearnScreen() {
           ]}
         >
           {loading || loadError ? (
-            <LoadState loading={loading} error={loadError} onRetry={() => setRetryKey((n) => n + 1)} message="Loading next word…" />
+            <LoadState loading={loading} error={loadError} onRetry={retryLoad} message="Loading next word…" />
           ) : next ? (
             <Pressable
               accessibilityRole="button"
