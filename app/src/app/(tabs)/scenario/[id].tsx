@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useAudioPlayer } from 'expo-audio';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -19,6 +20,7 @@ import { colors, fonts, radius, shadow, spacing, TAB_BAR_SPACE } from '@/theme';
 
 type Item =
   | ScenarioTurn
+  | { id: string; role: 'user'; text: string; recordingUri: string }
   | { id: string; role: 'feedback'; feedback: ScenarioFeedback }
   | { id: string; role: 'complete' };
 
@@ -42,6 +44,18 @@ export default function ScenarioChat() {
   const list = useRef<FlatList<Item>>(null);
   const { recording, toggle } = useRecorder();
   const play = usePlayAudio();
+  const replay = useAudioPlayer(null);
+  const [busy, setBusy] = useState(false);
+
+  const onReplay = useCallback((uri: string) => {
+    try {
+      replay.pause();
+      replay.replace({ uri });
+      replay.play();
+    } catch {
+      Alert.alert('Could not replay recording', 'Please try again.');
+    }
+  }, [replay]);
 
   useEffect(() => {
     let live = true;
@@ -62,19 +76,22 @@ export default function ScenarioChat() {
 
   const onMic = async () => {
     const uri = await toggle();
-    if (!uri || !scenario) return;
+    if (!uri || !scenario || busy) return;
+    setBusy(true);
     try {
       const feedback = await api.getScenarioFeedback(uri);
       const next = scenario.turns[step];
       setItems((prev) => [
         ...prev,
-        { id: `u${prev.length}`, role: 'user', text: '[mock] your spoken answer' },
+        { id: `u${prev.length}`, role: 'user', text: 'Your recording', recordingUri: uri },
         { id: `f${prev.length}`, role: 'feedback', feedback },
         next ?? { id: 'complete', role: 'complete' },
       ]);
       if (!next) await recordScenarioComplete(scenario.id);
     } catch {
       Alert.alert('Could not get feedback', 'Please try again.');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -113,6 +130,14 @@ export default function ScenarioChat() {
       return (
         <View style={[styles.bubble, user ? styles.user : styles.partner]}>
           <Text style={[styles.bubbleText, user && styles.userText]}>{item.text}</Text>
+          {user && 'recordingUri' in item && (
+            <IconButton
+              name="play"
+              label="Replay my recording"
+              size={20}
+              onPress={() => onReplay(item.recordingUri)}
+            />
+          )}
           {!user && (
             <IconButton
               name="volume-high"
@@ -124,7 +149,7 @@ export default function ScenarioChat() {
         </View>
       );
     },
-    [play, router],
+    [onReplay, play, router],
   );
 
   return (
@@ -153,7 +178,7 @@ export default function ScenarioChat() {
           contentContainerStyle={styles.list}
         />
         <View style={[styles.micBar, { paddingBottom: insets.bottom + TAB_BAR_SPACE }]}>
-          <MicButton recording={recording} onPress={onMic} disabled={complete} />
+          <MicButton recording={recording} onPress={onMic} disabled={complete || busy} />
         </View>
         </>
         )}
