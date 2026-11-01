@@ -38,10 +38,6 @@ export default function ScenarioChat() {
 
   useEffect(() => {
     let live = true;
-    setLoading(true);
-    setLoadError(null);
-    setScenario(null);
-    setItems([]);
     api.getScenario(id)
       .then((s) => {
         if (!live) return;
