@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { qaDelay } from './mockQa';
 import { categories, mockOcrText, mockTranslations, scenarios, words } from './mockData';
 import type {
   Category,
@@ -76,7 +77,8 @@ export const api = {
 
   getWords: (opts: { categoryId?: string; query?: string } = {}): Promise<Word[]> => {
     const q = opts.query?.trim().toLowerCase();
-    return delay(
+    return qaDelay(
+      'getWords',
       words.filter(
         (x) =>
           (!opts.categoryId || x.categoryId === opts.categoryId) &&
@@ -88,14 +90,14 @@ export const api = {
     );
   },
 
-  getWord: (id: string): Promise<Word | null> => delay(words.find((x) => x.id === id) ?? null, 100),
+  getWord: (id: string): Promise<Word | null> => qaDelay('getWord', words.find((x) => x.id === id) ?? null, 100),
 
   /** Voice search: pretend we transcribed a word and return the best match. */
   searchWordByVoice: (_audioUri: string): Promise<Word[]> => delay([words[0]], 600),
 
   /** Speech translation. `audioUri` is the user's recording. */
   translateSpeech: (_audioUri: string, direction: Direction): Promise<TranslateResult> =>
-    delay(
+    qaDelay('translateSpeech',
       {
         sourceText: direction === 'rhg-en' ? '[mock] Rohingya speech' : 'I need a doctor.',
         translatedText: mockTranslations[direction],
@@ -109,7 +111,7 @@ export const api = {
 
   /** Camera/photo translation (OCR mocked). */
   translateImage: (_imageUri: string, direction: Direction): Promise<TranslateResult> =>
-    delay(
+    qaDelay('translateImage',
       {
         sourceText: mockOcrText,
         translatedText: mockTranslations['en-rhg'],
@@ -139,13 +141,13 @@ export const api = {
   },
 
   getScenarios: (categoryId?: string): Promise<Scenario[]> =>
-    delay(
+    qaDelay('getScenarios',
       scenarios.filter((x) => !categoryId || x.categoryId === categoryId),
       100,
     ),
 
   getScenario: (id: string): Promise<Scenario | null> =>
-    delay(scenarios.find((x) => x.id === id) ?? null, 100),
+    qaDelay('getScenario', scenarios.find((x) => x.id === id) ?? null, 100),
 
   getScenarioFeedback: (_audioUri: string): Promise<ScenarioFeedback> =>
     delay(
@@ -186,6 +188,6 @@ export const api = {
   getNextWord: async (categoryId?: string): Promise<Word | null> => {
     const db = await loadDb();
     const pool = words.filter((x) => !categoryId || x.categoryId === categoryId);
-    return pool.find((x) => !(x.id in db.wordScores)) ?? null;
+    return qaDelay('getNextWord', pool.find((x) => !(x.id in db.wordScores)) ?? null, 100);
   },
 };
