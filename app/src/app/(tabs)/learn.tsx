@@ -1,17 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/api/client';
 import type { Word } from '@/api/types';
-import { davidDemoPhrases, type PracticePhrase } from '@/api/davidPhrases';
 import { categoryIcon } from '@/components/categoryIcon';
 import { GradientScreen } from '@/components/GradientScreen';
 import { ProgressBar } from '@/components/ProgressBar';
 import { LoadState } from '@/components/LoadState';
-import { MicButton } from '@/components/MicButton';
-import { useRecorder } from '@/hooks/useRecorder';
 import { Sheet } from '@/components/Sheet';
 import { useAppState } from '@/state/AppState';
 import { colors, fonts, radius, shadow, spacing, TAB_BAR_SPACE } from '@/theme';
@@ -32,52 +29,6 @@ export default function LearnScreen() {
     setRetryKey((n) => n + 1);
   };
   const practiced = progress?.wordsPracticed;
-  const [phrases, setPhrases] = useState<PracticePhrase[]>([]);
-  const [phraseLoading, setPhraseLoading] = useState(true);
-  const [phraseError, setPhraseError] = useState<string | null>(null);
-  const [phraseRetryKey, setPhraseRetryKey] = useState(0);
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const [submission, setSubmission] = useState<string | null>(null);
-  const { recording, toggle } = useRecorder();
-
-  const retryPhrases = () => {
-    setPhraseLoading(true);
-    setPhraseError(null);
-    setPhraseRetryKey((n) => n + 1);
-  };
-
-  useEffect(() => {
-    let live = true;
-    Promise.resolve(davidDemoPhrases)
-      .then((items) => {
-        if (!live) return;
-        setPhrases(items);
-        setPhraseError(null);
-      })
-      .catch(() => { if (live) setPhraseError('Could not load practice phrases.'); })
-      .finally(() => { if (live) setPhraseLoading(false); });
-    return () => { live = false; };
-  }, [phraseRetryKey]);
-
-  const onPhraseMic = async () => {
-    const phrase = phrases[phraseIndex];
-    if (!phrase || uploading) return;
-    const uri = await toggle();
-    if (!uri) return;
-    setUploading(true);
-    setSubmission(null);
-    try {
-      await api.submitPhraseRecording(phrase.id, uri);
-      setSubmission('Mock submission complete. No server upload or pronunciation score yet.');
-    } catch {
-      Alert.alert('Could not submit recording', 'Please try again.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-
   // Re-fetch the suggestion whenever practice progress changes.
   useEffect(() => {
     let live = true;
@@ -132,36 +83,6 @@ export default function LearnScreen() {
               </View>
             )
           )}
-
-          <View style={styles.phraseCard}>
-            <Text style={styles.section}>Phrase practice (demo)</Text>
-            {phraseLoading || phraseError ? (
-              <LoadState loading={phraseLoading} error={phraseError} onRetry={retryPhrases} message="Loading phrases…" />
-            ) : phrases.length ? (
-              <>
-                <Text style={styles.phraseCount}>Phrase {phraseIndex + 1} of {phrases.length}</Text>
-                <Text style={styles.phraseText}>{phrases[phraseIndex].text}</Text>
-                <Text style={styles.phraseNote}>Tap the mic to start, then tap again to stop.</Text>
-                <View style={styles.phraseMic}>
-                  <MicButton recording={recording} onPress={onPhraseMic} disabled={uploading} />
-                </View>
-                {uploading && <Text style={styles.phraseNote}>Submitting mock recording…</Text>}
-                {submission && <Text style={styles.phraseNote}>{submission}</Text>}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Next practice phrase"
-                  disabled={recording || uploading}
-                  onPress={() => {
-                    setPhraseIndex((i) => (i + 1) % phrases.length);
-                    setSubmission(null);
-                  }}
-                  style={[styles.phraseNext, (recording || uploading) && { opacity: 0.5 }]}
-                >
-                  <Text style={styles.phraseNextText}>Next phrase</Text>
-                </Pressable>
-              </>
-            ) : <Text style={styles.phraseNote}>No practice phrases available.</Text>}
-          </View>
 
           <View style={styles.tiles}>
             <Tile
@@ -315,11 +236,5 @@ const styles = StyleSheet.create({
   topicBody: { flex: 1, gap: spacing.sm },
   topicName: { fontSize: fonts.size.md, fontWeight: fonts.weight.bold, color: colors.text },
   topicMeta: { fontSize: fonts.size.sm, color: colors.textMuted },
-  phraseCard: { padding: spacing.lg, gap: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg },
-  phraseNote: { fontSize: fonts.size.sm, color: colors.textMuted },
-  phraseCount: { fontSize: fonts.size.sm, color: colors.primary, fontWeight: fonts.weight.bold },
-  phraseText: { fontSize: fonts.size.lg, color: colors.text, fontWeight: fonts.weight.bold },
-  phraseMic: { alignItems: 'center', paddingVertical: spacing.sm },
-  phraseNext: { backgroundColor: colors.primary, padding: spacing.md, borderRadius: radius.md, alignItems: 'center' },
-  phraseNextText: { color: '#FFFFFF', fontWeight: fonts.weight.bold },
+
 });
